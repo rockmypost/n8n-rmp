@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:latest
+    container_name: nginx_proxy_rmp
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+    networks:
+      - proxy_network
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+
+  letsencrypt:
+    image: nginxproxy/acme-companion:latest
+    container_name: letsencrypt_rmp
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx_certs:/etc/nginx/certs
+      - nginx_vhost:/etc/nginx/vhost.d
+      - nginx_html:/usr/share/nginx/html
+      - acme_state:/etc/acme.sh
+    environment:
+      - DEFAULT_EMAIL=${LETSENCRYPT_EMAIL}
+    networks:
+      - proxy_network
+    depends_on:
+      - nginx-proxy
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_rockmypost
+    restart: unless-stopped
+    expose:
+      - "5678"
+    environment:
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=${N8N_PROTOCOL}
+      - WEBHOOK_URL=${WEBHOOK_URL}
+      - VUE_APP_URL=${VUE_APP_URL}
+      - GENERIC_TIMEZONE=${TIMEZONE}
+      - N8N_USER_MANAGEMENT_DISABLED=${N8N_USER_MANAGEMENT_DISABLED}
+      - N8N_OWNER_EMAIL=${N8N_OWNER_EMAIL}
+      - N8N_OWNER_PASSWORD=${N8N_OWNER_PASSWORD}
+      - N8N_BASIC_AUTH_ACTIVE=${N8N_BASIC_AUTH_ACTIVE}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - N8N_PAYLOAD_SIZE_MAX=${N8N_PAYLOAD_SIZE_MAX}
+      - N8N_METRICS=${N8N_METRICS}
+      - N8N_LOG_LEVEL=${N8N_LOG_LEVEL}
+      - N8N_PERSISTED_BINARY_DATA_TTL=${N8N_PERSISTED_BINARY_DATA_TTL}
+      - VIRTUAL_HOST=${N8N_HOST}
+      - VIRTUAL_PORT=5678
+      - LETSENCRYPT_HOST=${N8N_HOST}
+      - LETSENCRYPT_EMAIL=${LETSENCRYPT_EMAIL}
+    volumes:
+      - rockmypost_n8n_data:/home/node/.n8n
+    networks:
+      - proxy_network
+      - n8n_network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      - nginx-proxy
+      - letsencrypt
+
+volumes:
+  rockmypost_n8n_data:
+    driver: local
+  nginx_certs:
+    driver: local
+  nginx_vhost:
+    driver: local
+  nginx_html:
+    driver: local
+  acme_state:
+    driver: local
+
+networks:
+  proxy_network:
+    driver: bridge
+  n8n_network:
+    driver: bridge
