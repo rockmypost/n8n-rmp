@@ -106,15 +106,15 @@ check_n8n_updates() {
     
     # Get current local image info
     LOCAL_IMAGE_ID=""
-    if docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep -q "n8nio/n8n:latest"; then
-        LOCAL_IMAGE_ID=$(docker images n8nio/n8n:latest --format "{{.ID}}")
+    if docker images --format "table {{.Repository}}:{{.Tag}}\t{{.ID}}" | grep -q "n8nio/n8n:next"; then
+        LOCAL_IMAGE_ID=$(docker images n8nio/n8n:next --format "{{.ID}}")
     fi
     
     # Pull latest image
     docker pull $N8N_IMAGE > /dev/null 2>&1
     
     # Get new image ID
-    NEW_IMAGE_ID=$(docker images n8nio/n8n:latest --format "{{.ID}}")
+    NEW_IMAGE_ID=$(docker images n8nio/n8n:next --format "{{.ID}}")
     
     if [[ "$LOCAL_IMAGE_ID" != "$NEW_IMAGE_ID" ]]; then
         log_success "N8N image updated"
