@@ -166,10 +166,39 @@ setup_project() {
     # Fix ownership
     chown -R $CURRENT_USER:$CURRENT_USER "$USER_HOME/$PROJECT_DIR"
     
-    # Setup environment file
+    # Setup environment file (create empty .env to force manual configuration)
     if [[ ! -f .env ]]; then
-        cp .env.example .env
-        log_success "Created .env file from template"
+        cat > .env << 'EOF'
+# N8N Configuration - REQUIRED: Configure all values before running ./start.sh
+# Copy from .env.example and customize with your actual values
+
+# Core Settings
+N8N_HOST=
+N8N_PROTOCOL=
+WEBHOOK_URL=
+VUE_APP_URL=
+TIMEZONE=
+
+# Security Settings
+N8N_USER_MANAGEMENT_DISABLED=
+N8N_OWNER_EMAIL=
+N8N_OWNER_PASSWORD=
+
+# Optional Settings
+N8N_BASIC_AUTH_ACTIVE=
+GOOGLE_OAUTH_CLIENT_ID=
+GOOGLE_OAUTH_CLIENT_SECRET=
+N8N_PAYLOAD_SIZE_MAX=
+N8N_METRICS=
+N8N_LOG_LEVEL=
+N8N_PERSISTED_BINARY_DATA_TTL=
+
+# SSL Configuration
+LETSENCRYPT_EMAIL=
+EOF
+        chmod 600 .env
+        log_success "Created empty .env file - configuration required"
+        log_warning "IMPORTANT: Edit .env with your actual values before running ./start.sh"
     else
         log_warning ".env file already exists"
     fi
@@ -224,17 +253,18 @@ main() {
     echo -e "${GREEN}✅ Repository Setup:${NC}"
     echo "   • Repository: $REPO_URL"
     echo "   • Location: $USER_HOME/$PROJECT_DIR"
-    echo "   • Environment: .env created from template"
+    echo "   • Environment: .env created (empty - requires configuration)"
     echo ""
     echo -e "${BLUE}🚀 Next Steps:${NC}"
     echo "   1. Restart your SSH session (for Docker permissions):"
     echo "      exit"
     echo "      ssh -i \"n8n-rmp.pem\" ubuntu@ec2-13-59-208-230.us-east-2.compute.amazonaws.com"
     echo ""
-    echo "   2. Configure your environment:"
+    echo "   2. Configure your environment (REQUIRED):"
     echo "      cd $PROJECT_DIR"
+    echo "      cp .env.example .env"
     echo "      nano .env"
-    echo "      # Update N8N_OWNER_PASSWORD with a secure password"
+    echo "      # Configure ALL values: N8N_HOST, N8N_OWNER_EMAIL, N8N_OWNER_PASSWORD, etc."
     echo ""
     echo "   3. Start N8N services:"
     echo "      ./start.sh"

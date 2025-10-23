@@ -25,7 +25,6 @@ log_error() { echo -e "${RED}❌ $1${NC}"; }
 echo -e "${BLUE}"
 echo "🚀 N8N ROCKMYPOST - START & UPDATE"
 echo "=================================="
-echo "Domain: $DOMAIN"
 echo "Repository: $REPO_URL"
 echo "=================================="
 echo -e "${NC}"
@@ -34,19 +33,15 @@ echo -e "${NC}"
 preflight_checks() {
     log_info "Running pre-flight checks..."
     
-    # Check if .env exists
+    # Check if .env exists (do NOT auto-create or print values)
     if [[ ! -f .env ]]; then
-        if [[ -f .env.example ]]; then
-            cp .env.example .env
-            log_success "Created .env from .env.example"
-            log_warning "Please configure .env file before continuing:"
-            echo "  nano .env"
-            echo "  # Update N8N_OWNER_PASSWORD and other settings"
-            exit 1
-        else
-            log_error ".env.example not found. Ensure you're in the correct directory."
-            exit 1
-        fi
+        log_error ".env file not found."
+        echo ""
+        echo -e "${YELLOW}Create and configure your .env before continuing:${NC}"
+        echo "  cp .env.example .env"
+        echo "  nano .env"
+        echo "  # Set N8N_OWNER_PASSWORD and required variables"
+        exit 1
     fi
     
     # Check if Docker is running
@@ -245,9 +240,6 @@ verify_ssl() {
 
 # Display final status and information
 show_final_status() {
-    local domain=$(grep "N8N_HOST=" .env | cut -d'=' -f2)
-    local owner_email=$(grep "N8N_OWNER_EMAIL=" .env | cut -d'=' -f2)
-    
     echo ""
     echo -e "${GREEN}🎉 N8N ROCKMYPOST IS RUNNING!${NC}"
     echo "=============================================="
@@ -265,11 +257,10 @@ show_final_status() {
     done
     echo ""
     
-    # Access information
+    # Access information (do not expose values)
     echo -e "${GREEN}🌐 Access Information:${NC}"
-    echo "   URL: https://$domain"
-    echo "   Admin Email: $owner_email"
-    echo "   Password: (configured in .env file)"
+    echo "   URL and Admin email are configured in your .env"
+    echo "   Password: configured in .env (not displayed)"
     echo ""
     
     # Useful commands
@@ -282,18 +273,9 @@ show_final_status() {
     echo "   Restart all:       ./start.sh"
     echo ""
     
-    # SSL information
-    echo -e "${YELLOW}🔒 SSL Information:${NC}"
-    echo "   • Certificates auto-renew every 60 days"
-    echo "   • First-time setup: 2-5 minutes"
-    echo "   • Certificate location: nginx_certs volume"
-    echo "   • Force renewal: docker exec letsencrypt_rmp /app/force_renew"
-    echo ""
-    
-    # Backup information
-    echo -e "${BLUE}💾 Backup Commands:${NC}"
-    echo "   Create backup:  docker run --rm -v rockmypost_n8n_data:/data -v \$(pwd):/backup alpine tar czf /backup/n8n-backup-\$(date +%Y%m%d-%H%M%S).tar.gz /data"
-    echo "   Restore backup: docker run --rm -v rockmypost_n8n_data:/data -v \$(pwd):/backup alpine tar xzf /backup/your-backup.tar.gz -C /"
+    echo -e "${YELLOW}🔒 Notes:${NC}"
+    echo "   • Keep your .env secure (recommended file mode 600)"
+    echo "   • Rotate credentials periodically"
     echo ""
     
     log_success "N8N startup completed successfully!"
